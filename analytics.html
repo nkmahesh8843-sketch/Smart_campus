@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Console - Analytics</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Unified Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Header Component -->
+            <header class="main-header" id="main-header"></header>
+
+            <!-- Content Area -->
+            <main class="content-body">
+
+                <!-- NumPy simulated Descriptors panel -->
+                <div class="stats-grid" id="analytics-descriptors-grid">
+                    <!-- Dynamic NumPy statistics card injected here -->
+                </div>
+
+                <!-- Two Column analytics layouts -->
+                <div class="dashboard-grid">
+
+                    <!-- Left: Top ranks, at-risk registry sheets -->
+                    <div style="display:flex; flex-direction:column; gap:24px;">
+
+                        <!-- Top 10 Honours list -->
+                        <div class="glass-panel" style="padding:24px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h3
+                                    style="font-family:var(--font-heading); font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <i class="ri-medal-2-line" style="color:var(--accent-amber);"></i> Academic Honours
+                                    list (Top 10)
+                                </h3>
+                                <span class="badge success">CGPA Ranks</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="custom-table" style="font-size:12px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Student ID</th>
+                                            <th>Name</th>
+                                            <th>Department</th>
+                                            <th>CGPA</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="honours-table-body">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- At-Risk Flags list -->
+                        <div class="glass-panel" style="padding:24px;">
+                            <div
+                                style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                                <h3
+                                    style="font-family:var(--font-heading); font-size:16px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                    <i class="ri-error-warning-line" style="color:var(--accent-rose);"></i> Flagged
+                                    At-Risk Students
+                                </h3>
+                                <span class="badge danger">Academic Warnings</span>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="custom-table" style="font-size:12px;">
+                                    <thead>
+                                        <tr>
+                                            <th>Student ID</th>
+                                            <th>Name</th>
+                                            <th>Dept</th>
+                                            <th>CGPA</th>
+                                            <th>Reasoning / Flags</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="atrisk-table-body">
+                                        <!-- Injected dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- Right: Pandas Grade frequencies and Department GPA means -->
+                    <div style="display:flex; flex-direction:column; gap:24px;">
+
+                        <div class="chart-card glass-panel" style="min-height:300px;">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Curriculum Grade Distribution (Frequencies)</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="gradeFrequenciesChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="chart-card glass-panel" style="min-height:300px;">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Department GPA Averages (Pandas Mean)</h3>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="deptAverageChart"></canvas>
+                            </div>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // --- Campus Analytics Engine Script ---
+        document.addEventListener("DOMContentLoaded", () => {
+            calculateDescriptors();
+            loadHonoursTable();
+            loadAtRiskTable();
+            renderAnalyticsCharts();
+        });
+
+        function calculateDescriptors() {
+            const grid = document.getElementById("analytics-descriptors-grid");
+            if (!grid) return;
+
+            const cgpaValues = Object.keys(studentsDB)
+                .map(sid => calculateCGPA(sid))
+                .filter(v => v > 0);
+
+            if (cgpaValues.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding:20px; color:var(--text-secondary);">Register and log grade cards first to generate statistical models.</div>`;
+                return;
+            }
+
+            // Descriptive analytics: Mean calculation
+            const mean = cgpaValues.reduce((sum, val) => sum + val, 0) / cgpaValues.length;
+
+            // Descriptive analytics: Median calculation
+            const sorted = [...cgpaValues].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            const median = sorted.length % 2 !== 0 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+
+            // Descriptive analytics: Standard Deviation
+            const variance = cgpaValues.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / cgpaValues.length;
+            const stdDev = Math.sqrt(variance);
+
+            // Honors count: CGPA >= 8.5
+            const honorsCount = cgpaValues.filter(v => v >= 8.50).length;
+
+            grid.innerHTML = `
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">System Mean CGPA</span>
+                        <span class="stat-value">${mean.toFixed(2)}</span>
+                    </div>
+                    <div class="stat-icon blue"><i class="ri-calculator-line"></i></div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">System Median CGPA</span>
+                        <span class="stat-value">${median.toFixed(2)}</span>
+                    </div>
+                    <div class="stat-icon cyan"><i class="ri-align-justify"></i></div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">Standard Deviation</span>
+                        <span class="stat-value">${stdDev.toFixed(3)}</span>
+                    </div>
+                    <div class="stat-icon purple"><i class="ri-bubble-chart-line"></i></div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">Honors Ranks (≥8.5)</span>
+                        <span class="stat-value">${honorsCount} Students</span>
+                    </div>
+                    <div class="stat-icon emerald"><i class="ri-award-line"></i></div>
+                </div>
+            `;
+        }
+
+        function loadHonoursTable() {
+            const tbody = document.getElementById("honours-table-body");
+            if (!tbody) return;
+
+            // Fetch students mapped with computed CGPAs sorted descending
+            const honorsList = Object.keys(studentsDB)
+                .map(sid => {
+                    return {
+                        student_id: sid,
+                        name: studentsDB[sid].name,
+                        department: studentsDB[sid].department,
+                        cgpa: calculateCGPA(sid)
+                    };
+                })
+                .filter(s => s.cgpa > 0)
+                .sort((a, b) => b.cgpa - a.cgpa)
+                .slice(0, 10);
+
+            tbody.innerHTML = "";
+            if (honorsList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:12px; color:var(--text-muted);">No graded student registry found.</td></tr>`;
+            } else {
+                honorsList.forEach((h, idx) => {
+                    const medal = idx === 0 ? "🥇 " : (idx === 1 ? "🥈 " : (idx === 2 ? "🥉 " : ""));
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${medal}${idx + 1}</strong></td>
+                            <td>${h.student_id}</td>
+                            <td>${h.name}</td>
+                            <td>${h.department}</td>
+                            <td><strong style="color:var(--accent-amber);">${h.cgpa.toFixed(2)}</strong></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function loadAtRiskTable() {
+            const tbody = document.getElementById("atrisk-table-body");
+            if (!tbody) return;
+
+            const atRisk = getAtRiskStudents();
+            tbody.innerHTML = "";
+
+            if (atRisk.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:16px; color:var(--accent-emerald);">All students satisfy academic attendance & grade requirements.</td></tr>`;
+            } else {
+                atRisk.forEach(r => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td><strong>${r.student_id}</strong></td>
+                            <td>${r.name}</td>
+                            <td>${r.department}</td>
+                            <td>${r.cgpa > 0 ? r.cgpa.toFixed(2) : 'N/A'}</td>
+                            <td><span class="badge danger" style="padding:4px 8px; font-size:11px;">${r.flags.join(', ')}</span></td>
+                        </tr>
+                    `;
+                });
+            }
+        }
+
+        function renderAnalyticsCharts() {
+            // 1. Grade frequencies chart (Pandas value_counts simulation)
+            const gradesFreq = { "O": 0, "A+": 0, "A": 0, "B+": 0, "B": 0, "C": 0, "P": 0, "F": 0 };
+
+            Object.values(academicDB).forEach(acad => {
+                if (acad && acad.semesters) {
+                    Object.values(acad.semesters).forEach(semCourses => {
+                        semCourses.forEach(c => {
+                            if (gradesFreq[c.grade] !== undefined) {
+                                gradesFreq[c.grade]++;
+                            }
+                        });
+                    });
+                }
+            });
+
+            new Chart(document.getElementById("gradeFrequenciesChart").getContext("2d"), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(gradesFreq),
+                    datasets: [{
+                        label: 'Total Assigned Grade Count',
+                        data: Object.values(gradesFreq),
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af', stepSize: 1 } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            // 2. Department average chart (Pandas groupby mean simulation)
+            const deptSums = {};
+            const deptCounts = {};
+
+            Object.keys(studentsDB).forEach(sid => {
+                const cgpa = calculateCGPA(sid);
+                if (cgpa > 0) {
+                    const dept = studentsDB[sid].department;
+                    deptSums[dept] = (deptSums[dept] || 0) + cgpa;
+                    deptCounts[dept] = (deptCounts[dept] || 0) + 1;
+                }
+            });
+
+            const depts = [];
+            const deptAveragedValues = [];
+            Object.keys(deptSums).forEach(dept => {
+                depts.push(dept);
+                deptAveragedValues.push(Math.round((deptSums[dept] / deptCounts[dept]) * 100) / 100);
+            });
+
+            new Chart(document.getElementById("deptAverageChart").getContext("2d"), {
+                type: 'bar',
+                data: {
+                    labels: depts,
+                    datasets: [{
+                        label: 'Mean GPA',
+                        data: deptAveragedValues,
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: '#10b981',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' }, min: 0, max: 10 },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

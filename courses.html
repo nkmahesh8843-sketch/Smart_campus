@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Console - Courses</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Unified Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Header Component -->
+            <header class="main-header" id="main-header"></header>
+
+            <!-- Content Area -->
+            <main class="content-body">
+
+                <!-- Summary Metrics Rows -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel">
+                        <div class="stat-info">
+                            <span class="stat-label">Total Departments</span>
+                            <span class="stat-value">8 Domains</span>
+                        </div>
+                        <div class="stat-icon purple"><i class="ri-git-repository-line"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-info">
+                            <span class="stat-label">Class Seat Capacity</span>
+                            <span class="stat-value" id="metrics-capacity">685 Seats</span>
+                        </div>
+                        <div class="stat-icon blue"><i class="ri-team-line"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-info">
+                            <span class="stat-label">Waitlist Queue</span>
+                            <span class="stat-value" id="metrics-waitlists">0 Queue</span>
+                        </div>
+                        <div class="stat-icon rose"><i class="ri-hourglass-2-line"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel no-print">
+                        <button class="btn btn-primary" style="width:100%; height:100%;"
+                            onclick="openModal('add-course-modal')">
+                            <i class="ri-add-circle-line"></i> Add New Course
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Split Layout: Catalog Grid (Left) & Pipeline (Right) -->
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px; align-items:flex-start;">
+
+                    <!-- Left: Available Courses Grid -->
+                    <div>
+                        <h2
+                            style="font-family:var(--font-heading); font-size:20px; font-weight:700; margin-bottom:16px;">
+                            Active Campus Course Syllabus</h2>
+                        <div class="courses-grid" id="courses-catalog-grid">
+                            <!-- Course Cards will load here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Right: Waitlist Pipeline Panel -->
+                    <div class="glass-panel" style="padding:24px; display:flex; flex-direction:column; gap:16px;">
+                        <h2
+                            style="font-family:var(--font-heading); font-size:16px; font-weight:600; display:flex; align-items:center; gap:8px;">
+                            <i class="ri-arrow-left-right-line" style="color:var(--accent-cyan);"></i> Waitlist Queue
+                            Manager
+                        </h2>
+
+                        <div class="form-group">
+                            <label class="form-label" style="font-size:11px;">Select Syllabus Code</label>
+                            <select id="pipeline-course-select" class="form-control form-select"
+                                style="padding:8px 12px; font-size:13px;" onchange="loadWaitlistPipeline()">
+                                <!-- Course options injected here -->
+                            </select>
+                        </div>
+
+                        <!-- Drag and Drop columns wrapper -->
+                        <div style="display:flex; flex-direction:column; gap:16px; margin-top:8px;">
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <div class="waitlist-title" style="font-size:12px; color:var(--accent-emerald);">
+                                    <span
+                                        style="width:6px; height:6px; background:var(--accent-emerald); border-radius:50%;"></span>
+                                    Active Class Roster (<span id="pipeline-enrolled-count">0</span>)
+                                </div>
+                                <div class="drag-list" id="pipeline-enrolled-list" ondragover="allowDrop(event)"
+                                    ondrop="handleDrop(event, 'Enrolled')">
+                                    <!-- Enrolled student cards drag items -->
+                                </div>
+                            </div>
+
+                            <div style="display:flex; flex-direction:column; gap:8px;">
+                                <div class="waitlist-title" style="font-size:12px; color:var(--accent-rose);">
+                                    <span
+                                        style="width:6px; height:6px; background:var(--accent-rose); border-radius:50%;"></span>
+                                    Waitlisted Pipeline (<span id="pipeline-waitlist-count">0</span>)
+                                </div>
+                                <div class="drag-list" id="pipeline-waitlist-list" ondragover="allowDrop(event)"
+                                    ondrop="handleDrop(event, 'Waitlisted')">
+                                    <!-- Waitlist student cards drag items -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal 1: Create New Syllabus Course -->
+    <div class="modal-overlay" id="add-course-modal">
+        <div class="modal-card glass-panel" style="max-width:480px;">
+            <i class="ri-close-line modal-close" onclick="closeModal('add-course-modal')"></i>
+            <h3
+                style="font-family:var(--font-heading); font-size:20px; border-bottom:1px solid var(--glass-border); padding-bottom:12px; margin-bottom:20px;">
+                <i class="ri-book-open-line" style="color:var(--accent-blue);"></i> Add New Syllabus Course
+            </h3>
+            <form id="course-form" onsubmit="saveNewCourse(event)"
+                style="display:flex; flex-direction:column; gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Course Code (Syllabus Key)</label>
+                    <input type="text" id="course-code-input" class="form-control" placeholder="e.g. CS302" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Course Name</label>
+                    <input type="text" id="course-name-input" class="form-control" placeholder="e.g. Operating Systems"
+                        required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Assign Department</label>
+                    <select id="course-dept-input" class="form-control form-select" required>
+                        <option value="CSE">CSE</option>
+                        <option value="ECE">ECE</option>
+                        <option value="ME">ME</option>
+                        <option value="CE">CE</option>
+                        <option value="EEE">EEE</option>
+                        <option value="ISE">ISE</option>
+                        <option value="AIML">AIML</option>
+                        <option value="DS">DS</option>
+                        <option value="ALL">General / Math (ALL)</option>
+                    </select>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Course Credits</label>
+                        <input type="number" id="course-credits-input" class="form-control" placeholder="4" min="1"
+                            max="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Max Seats Capacity</label>
+                        <input type="number" id="course-seats-input" class="form-control" placeholder="60" min="5"
+                            max="150" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Faculty Lecturer In-Charge</label>
+                    <input type="text" id="course-faculty-input" class="form-control"
+                        placeholder="e.g. Prof. Asha Gowda" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">Generate Syllabus
+                    Record</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Enroll Student Form Modal -->
+    <div class="modal-overlay" id="enroll-modal">
+        <div class="modal-card glass-panel" style="max-width:440px;">
+            <i class="ri-close-line modal-close" onclick="closeModal('enroll-modal')"></i>
+            <h3
+                style="font-family:var(--font-heading); font-size:20px; border-bottom:1px solid var(--glass-border); padding-bottom:12px; margin-bottom:20px;">
+                <i class="ri-user-add-line" style="color:var(--accent-blue);"></i> Enroll Student in Course
+            </h3>
+            <form onsubmit="handleEnrollStudent(event)" style="display:flex; flex-direction:column; gap:16px;">
+                <input type="hidden" id="enroll-course-code">
+
+                <div class="form-group">
+                    <label class="form-label">Course Selected</label>
+                    <input type="text" id="enroll-course-display" class="form-control" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Select Active Student</label>
+                    <select id="enroll-student-select" class="form-control form-select" required>
+                        <!-- Active students injected here -->
+                    </select>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">Confirm
+                    Enrollment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Roster Drawer Modal -->
+    <div class="modal-overlay" id="roster-modal">
+        <div class="modal-card glass-panel" style="max-width:550px;">
+            <i class="ri-close-line modal-close" onclick="closeModal('roster-modal')"></i>
+            <h3
+                style="font-family:var(--font-heading); font-size:20px; border-bottom:1px solid var(--glass-border); padding-bottom:12px; margin-bottom:20px; display:flex; align-items:center; gap:8px;">
+                <i class="ri-group-line" style="color:var(--accent-cyan);"></i> Class Roster: <span
+                    id="roster-course-title">CS101</span>
+            </h3>
+
+            <div class="table-responsive">
+                <table class="custom-table" style="font-size:13px;">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Student Name</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="roster-table-body">
+                        <!-- Injected dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // --- Course Enrollment Scripts ---
+        let dragTargetId = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            renderCoursesCatalog();
+            loadCoursesDropdowns();
+            loadWaitlistPipeline();
+            updateCoursesMetrics();
+        });
+
+        function updateCoursesMetrics() {
+            let totalCap = 0;
+            Object.values(coursesDB).forEach(c => totalCap += c.max_seats);
+            document.getElementById("metrics-capacity").innerText = `${totalCap} Seats`;
+
+            const waitlistCount = Object.values(enrollmentsDB).filter(e => e.status === "Waitlisted").length;
+            document.getElementById("metrics-waitlists").innerText = `${waitlistCount} Queue`;
+        }
+
+        function renderCoursesCatalog() {
+            const grid = document.getElementById("courses-catalog-grid");
+            if (!grid) return;
+
+            grid.innerHTML = "";
+            Object.values(coursesDB).forEach(c => {
+                // Count active enrollments
+                const enrollments = Object.values(enrollmentsDB).filter(e => e.course_code === c.code && e.status === "Enrolled");
+                const taken = enrollments.length;
+                const pct = Math.round(100 * taken / c.max_seats);
+                const color = pct >= 90 ? 'rose' : (pct >= 70 ? 'amber' : 'blue');
+
+                grid.innerHTML += `
+                    <div class="course-card glass-panel">
+                        <div class="course-header">
+                            <span class="course-code">${c.code}</span>
+                            <span class="badge info">${c.credits} Credits</span>
+                        </div>
+                        <h3 class="course-name">${c.name}</h3>
+                        <div class="course-meta">
+                            <span><i class="ri-user-star-line"></i> <strong>Faculty:</strong> ${c.faculty}</span>
+                            <span><i class="ri-building-line"></i> <strong>Dept:</strong> ${c.dept}</span>
+                        </div>
+                        <div class="course-seats">
+                            <div class="seats-labels">
+                                <span style="color:var(--text-secondary);">Taken: <strong>${taken}</strong> / ${c.max_seats} seats</span>
+                                <span style="font-weight:600; color:var(--accent-${color});">${pct}% Filled</span>
+                            </div>
+                            <div class="progress-bar-bg">
+                                <div class="progress-bar-fill" style="width: ${pct}%; background:var(--accent-${color})"></div>
+                            </div>
+                        </div>
+                        <div class="course-actions">
+                            <button class="btn btn-secondary" style="flex-grow:1; padding:8px 12px; font-size:12px;" onclick="viewRoster('${c.code}')"><i class="ri-group-line"></i> Roster</button>
+                            <button class="btn btn-primary" style="flex-grow:1; padding:8px 12px; font-size:12px;" onclick="openEnrollForm('${c.code}')"><i class="ri-user-add-line"></i> Enroll</button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function loadCoursesDropdowns() {
+            const select = document.getElementById("pipeline-course-select");
+            if (!select) return;
+
+            select.innerHTML = "";
+            Object.values(coursesDB).forEach(c => {
+                select.innerHTML += `<option value="${c.code}">${c.code} - ${c.name}</option>`;
+            });
+        }
+
+        function saveNewCourse(e) {
+            e.preventDefault();
+            const code = document.getElementById("course-code-input").value.trim().toUpperCase();
+            const name = document.getElementById("course-name-input").value.trim();
+            const dept = document.getElementById("course-dept-input").value;
+            const credits = parseInt(document.getElementById("course-credits-input").value);
+            const seats = parseInt(document.getElementById("course-seats-input").value);
+            const faculty = document.getElementById("course-faculty-input").value.trim();
+
+            if (coursesDB[code]) {
+                showToast("Syllabus Error", `Course ${code} is already registered.`, "error");
+                return;
+            }
+
+            coursesDB[code] = { code, name, dept, credits, max_seats: seats, faculty };
+            saveAllData();
+
+            showToast("Course Registered", `Successfully added ${name} (${code}) to curriculum.`, "success");
+            closeModal("add-course-modal");
+            document.getElementById("course-form").reset();
+
+            renderCoursesCatalog();
+            loadCoursesDropdowns();
+            updateCoursesMetrics();
+        }
+
+        function openEnrollForm(code) {
+            const c = coursesDB[code];
+            if (!c) return;
+
+            document.getElementById("enroll-course-code").value = code;
+            document.getElementById("enroll-course-display").value = `${code} - ${c.name}`;
+
+            // Load eligible active students dropdown
+            const select = document.getElementById("enroll-student-select");
+            select.innerHTML = "";
+
+            Object.values(studentsDB).filter(s => s.is_active).forEach(s => {
+                select.innerHTML += `<option value="${s.student_id}">${s.student_id} - ${s.name}</option>`;
+            });
+
+            openModal("enroll-modal");
+        }
+
+        function handleEnrollStudent(e) {
+            e.preventDefault();
+            const code = document.getElementById("enroll-course-code").value;
+            const sid = document.getElementById("enroll-student-select").value;
+
+            const enrollmentId = `${sid}_${code}`;
+            const c = coursesDB[code];
+
+            // Checks if student already enrolled
+            if (enrollmentsDB[enrollmentId] && enrollmentsDB[enrollmentId].status === "Enrolled") {
+                showToast("Enrollment Alert", "Student is already actively enrolled in this course.", "error");
+                return;
+            }
+
+            // Checks capacity limits
+            const currentEnrolledCount = Object.values(enrollmentsDB).filter(e => e.course_code === code && e.status === "Enrolled").length;
+            const isWaitlist = currentEnrolledCount >= c.max_seats;
+            const status = isWaitlist ? "Waitlisted" : "Enrolled";
+
+            enrollmentsDB[enrollmentId] = {
+                enrollment_id: enrollmentId,
+                student_id: sid,
+                course_code: code,
+                course_name: c.name,
+                credits: c.credits,
+                status: status,
+                enrolled_on: new Date().toISOString().replace('T', ' ').split('.')[0],
+                grade: null
+            };
+
+            saveAllData();
+            closeModal("enroll-modal");
+
+            if (isWaitlist) {
+                showToast("Course Full", `Capacity limit hit. Student placed on ${code} waitlist queue.`, "info");
+            } else {
+                showToast("Enrollment Success", `Successfully enrolled student in ${code}.`, "success");
+            }
+
+            renderCoursesCatalog();
+            loadWaitlistPipeline();
+            updateCoursesMetrics();
+        }
+
+        function viewRoster(code) {
+            const rosterTbody = document.getElementById("roster-table-body");
+            document.getElementById("roster-course-title").innerText = code;
+
+            const rosters = Object.values(enrollmentsDB).filter(e => e.course_code === code);
+
+            rosterTbody.innerHTML = "";
+            if (rosters.length === 0) {
+                rosterTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:20px; color:var(--text-muted);">No student is currently enrolled in this syllabus course.</td></tr>`;
+            } else {
+                rosters.forEach(r => {
+                    const student = studentsDB[r.student_id] || { name: "Unknown" };
+                    const badgeClass = r.status === "Enrolled" ? 'success' : (r.status === 'Completed' ? 'info' : 'warning');
+                    rosterTbody.innerHTML += `
+                        <tr>
+                            <td><strong>${r.student_id}</strong></td>
+                            <td>${student.name}</td>
+                            <td><span class="badge ${badgeClass}">${r.status}</span></td>
+                            <td>
+                                <button class="btn btn-danger" style="padding:4px 8px; font-size:11px;" onclick="dropStudent('${r.student_id}', '${code}')">Drop</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            openModal("roster-modal");
+        }
+
+        function dropStudent(sid, code) {
+            const enrollId = `${sid}_${code}`;
+            if (!enrollmentsDB[enrollId]) return;
+
+            const isEnrolled = enrollmentsDB[enrollId].status === "Enrolled";
+            delete enrollmentsDB[enrollId];
+            showToast("Drop Record", `Student ${sid} dropped from ${code}.`, "info");
+
+            // Promote first waitlisted student if an enrolled seat opened up
+            if (isEnrolled) {
+                const waitlisted = Object.values(enrollmentsDB).filter(e => e.course_code === code && e.status === "Waitlisted");
+                if (waitlisted.length > 0) {
+                    const firstWaitlist = waitlisted[0];
+                    firstWaitlist.status = "Enrolled";
+                    const studentName = studentsDB[firstWaitlist.student_id] ? studentsDB[firstWaitlist.student_id].name : firstWaitlist.student_id;
+                    showToast("Queue Promotion", `Waitlist promoted: ${studentName} successfully added to active class.`, "success");
+                }
+            }
+
+            saveAllData();
+            renderCoursesCatalog();
+            loadWaitlistPipeline();
+            updateCoursesMetrics();
+
+            // refresh modal table
+            viewRoster(code);
+        }
+
+        // --- Drag and Drop Pipeline Engine ---
+        function loadWaitlistPipeline() {
+            const code = document.getElementById("pipeline-course-select").value;
+            if (!code) return;
+
+            const activeList = document.getElementById("pipeline-enrolled-list");
+            const waitlistList = document.getElementById("pipeline-waitlist-list");
+
+            const enrollments = Object.values(enrollmentsDB).filter(e => e.course_code === code);
+            const activeRoster = enrollments.filter(e => e.status === "Enrolled" || e.status === "Completed");
+            const waitlistQueue = enrollments.filter(e => e.status === "Waitlisted");
+
+            document.getElementById("pipeline-enrolled-count").innerText = activeRoster.length;
+            document.getElementById("pipeline-waitlist-count").innerText = waitlistQueue.length;
+
+            activeList.innerHTML = "";
+            waitlistList.innerHTML = "";
+
+            if (activeRoster.length === 0) activeList.innerHTML = `<div style="font-size:11px; text-align:center; padding:12px; color:var(--text-muted);">Roster Empty</div>`;
+            else {
+                activeRoster.forEach(e => {
+                    const student = studentsDB[e.student_id] || { name: e.student_id };
+                    activeList.innerHTML += `
+                        <div class="drag-item" draggable="true" ondragstart="handleDragStart('${e.enrollment_id}', event)" id="drag-${e.enrollment_id}">
+                            <span><strong>${student.name}</strong> (${e.student_id})</span>
+                            <i class="ri-drag-move-2-line" style="color:var(--text-muted);"></i>
+                        </div>
+                    `;
+                });
+            }
+
+            if (waitlistQueue.length === 0) waitlistList.innerHTML = `<div style="font-size:11px; text-align:center; padding:12px; color:var(--text-muted);">Queue Empty</div>`;
+            else {
+                waitlistQueue.forEach(e => {
+                    const student = studentsDB[e.student_id] || { name: e.student_id };
+                    waitlistList.innerHTML += `
+                        <div class="drag-item" draggable="true" ondragstart="handleDragStart('${e.enrollment_id}', event)" id="drag-${e.enrollment_id}">
+                            <span><strong>${student.name}</strong> (${e.student_id})</span>
+                            <i class="ri-drag-move-2-line" style="color:var(--text-muted);"></i>
+                        </div>
+                    `;
+                });
+            }
+        }
+
+        function handleDragStart(id, event) {
+            dragTargetId = id;
+            event.dataTransfer.setData("text", id);
+        }
+
+        function allowDrop(event) {
+            event.preventDefault();
+        }
+
+        function handleDrop(event, targetStatus) {
+            event.preventDefault();
+            const id = event.dataTransfer.getData("text");
+            if (!id || !enrollmentsDB[id]) return;
+
+            const course = coursesDB[enrollmentsDB[id].course_code];
+
+            // Check capacity limit checks before active promotions
+            if (targetStatus === 'Enrolled') {
+                const currentEnrolled = Object.values(enrollmentsDB).filter(e => e.course_code === course.code && e.status === "Enrolled").length;
+                if (currentEnrolled >= course.max_seats) {
+                    showToast("Capacity Warning", `Active roster cannot exceed capacity of ${course.max_seats} seats.`, "error");
+                    return;
+                }
+            }
+
+            enrollmentsDB[id].status = targetStatus;
+            saveAllData();
+            showToast("Pipeline Moved", `Student status updated to ${targetStatus}.`, "success");
+
+            renderCoursesCatalog();
+            loadWaitlistPipeline();
+            updateCoursesMetrics();
+        }
+    </script>
+</body>
+
+</html>

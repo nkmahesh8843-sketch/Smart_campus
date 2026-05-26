@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Console - Dashboard</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Unified Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Header Component -->
+            <header class="main-header" id="main-header"></header>
+
+            <!-- Content Area -->
+            <main class="content-body">
+
+                <!-- Quick Summary Stats Grid -->
+                <div class="stats-grid" id="stats-dashboard-grid">
+                    <!-- Dynamic counters will be injected here by script.js / dashboard logic -->
+                </div>
+
+                <!-- Core Visual Charts Panel -->
+                <div class="dashboard-grid">
+                    <!-- Left: Interactive Metrics Charts -->
+                    <div style="display:flex; flex-direction:column; gap:24px;">
+                        <div class="chart-card glass-panel">
+                            <div class="chart-header">
+                                <h3 class="chart-title">Academic CGPA Performance Analysis</h3>
+                                <span class="badge info">VTU Grades Scale</span>
+                            </div>
+                            <div class="chart-container">
+                                <canvas id="gpaChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:24px;">
+                            <div class="chart-card glass-panel" style="min-height: 280px;">
+                                <div class="chart-header">
+                                    <h3 class="chart-title">Tuition Collections Status</h3>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="revenueChart"></canvas>
+                                </div>
+                            </div>
+                            <div class="chart-card glass-panel" style="min-height: 280px;">
+                                <div class="chart-header">
+                                    <h3 class="chart-title">Course Enrollment Spread</h3>
+                                </div>
+                                <div class="chart-container">
+                                    <canvas id="courseSpreadChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Timelines & Widgets -->
+                    <div style="display:flex; flex-direction:column; gap:24px;">
+                        <!-- Calendar Widget Card -->
+                        <div class="glass-panel" style="padding:24px; display:flex; flex-direction:column; gap:16px;">
+                            <div
+                                style="display:flex; align-items:center; gap:10px; font-family:var(--font-heading); font-size:16px; font-weight:600;">
+                                <i class="ri-calendar-todo-line" style="color:var(--accent-blue);"></i> Campus Academic
+                                Calendar
+                            </div>
+                            <div
+                                style="text-align:center; padding:12px; background:rgba(255,255,255,0.02); border-radius:var(--border-radius-sm); border:1px solid var(--glass-border);">
+                                <div id="widget-date"
+                                    style="font-size:24px; font-weight:700; color:var(--text-primary);">26</div>
+                                <div id="widget-day-month"
+                                    style="font-size:12px; color:var(--text-secondary); text-transform:uppercase; letter-spacing:1px; margin-top:4px;">
+                                    Tuesday, May 2026</div>
+                            </div>
+                            <ul
+                                style="list-style:none; font-size:12px; display:flex; flex-direction:column; gap:10px; color:var(--text-secondary);">
+                                <li style="display:flex; align-items:center; gap:8px;"><span
+                                        style="width:6px; height:6px; background:var(--accent-emerald); border-radius:50%;"></span>
+                                    Midterm Assessment Submissions</li>
+                                <li style="display:flex; align-items:center; gap:8px;"><span
+                                        style="width:6px; height:6px; background:var(--accent-amber); border-radius:50%;"></span>
+                                    DSCE Internal Directory Review</li>
+                                <li style="display:flex; align-items:center; gap:8px;"><span
+                                        style="width:6px; height:6px; background:var(--accent-rose); border-radius:50%;"></span>
+                                    Graduation Ceremony Preparations</li>
+                            </ul>
+                        </div>
+
+                        <!-- System Log / Activity Panel -->
+                        <div class="glass-panel"
+                            style="padding:24px; flex-grow:1; display:flex; flex-direction:column; gap:16px;">
+                            <h3
+                                style="font-family:var(--font-heading); font-size:16px; font-weight:600; display:flex; align-items:center; gap:10px;">
+                                <i class="ri-history-line" style="color:var(--accent-cyan);"></i> Live System Activity
+                                Log
+                            </h3>
+                            <div style="display:flex; flex-direction:column; gap:12px; overflow-y:auto; max-height:220px;"
+                                id="activity-log-box">
+                                <!-- Dynamic logs injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // --- Dashboard Core Scripts ---
+        document.addEventListener("DOMContentLoaded", () => {
+            renderDashboardCounters();
+            renderDashboardCharts();
+            renderActivityLogs();
+            updateCalendarWidget();
+        });
+
+        function renderDashboardCounters() {
+            const grid = document.getElementById("stats-dashboard-grid");
+            if (!grid) return;
+
+            const activeCount = Object.values(studentsDB).filter(s => s.is_active).length;
+            const coursesCount = Object.keys(coursesDB).length;
+
+            // Collections summing
+            let paidSum = 0;
+            let pendingSum = 0;
+            Object.values(feesDB).forEach(f => {
+                if (f.paid) paidSum += f.total_fee;
+                else pendingSum += f.total_fee;
+            });
+
+            // At risk calculation
+            const riskCount = getAtRiskStudents().length;
+
+            grid.innerHTML = `
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">Active Registry</span>
+                        <span class="stat-value">${activeCount} Students</span>
+                    </div>
+                    <div class="stat-icon blue"><i class="ri-group-line"></i></div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">Available Courses</span>
+                        <span class="stat-value">${coursesCount} Courses</span>
+                    </div>
+                    <div class="stat-icon cyan"><i class="ri-book-3-line"></i></div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">Tuition Collected</span>
+                        <span class="stat-value">Rs. ${(paidSum / 1000).toFixed(0)}k</span>
+                    </div>
+                    <div class="stat-icon emerald"><i class="ri-wallet-3-line"></i></div>
+                </div>
+                <div class="stat-card glass-panel">
+                    <div class="stat-info">
+                        <span class="stat-label">At-Risk Alerts</span>
+                        <span class="stat-value">${riskCount} Flags</span>
+                    </div>
+                    <div class="stat-icon rose"><i class="ri-error-warning-line"></i></div>
+                </div>
+            `;
+        }
+
+        function renderDashboardCharts() {
+            // 1. CGPA Bands distribution Line Chart
+            const cgpaValues = Object.keys(academicDB).map(sid => calculateCGPA(sid)).filter(v => v > 0);
+            const bands = { "<5.0": 0, "5.0-6.5": 0, "6.5-8.0": 0, "8.0-9.0": 0, "9.0-10.0": 0 };
+            cgpaValues.forEach(val => {
+                if (val < 5.0) bands["<5.0"]++;
+                else if (val < 6.5) bands["5.0-6.5"]++;
+                else if (val < 8.0) bands["6.5-8.0"]++;
+                else if (val < 9.0) bands["8.0-9.0"]++;
+                else bands["9.0-10.0"]++;
+            });
+
+            new Chart(document.getElementById('gpaChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: Object.keys(bands),
+                    datasets: [{
+                        label: 'Number of Students',
+                        data: Object.values(bands),
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            // 2. Revenue Collection Chart
+            let paidSum = 0;
+            let pendingSum = 0;
+            Object.values(feesDB).forEach(f => {
+                if (f.paid) paidSum += f.total_fee;
+                else pendingSum += f.total_fee;
+            });
+
+            new Chart(document.getElementById('revenueChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: ['Collected', 'Outstanding'],
+                    datasets: [{
+                        data: [paidSum, pendingSum],
+                        backgroundColor: ['rgba(16, 185, 129, 0.85)', 'rgba(244, 63, 94, 0.85)'],
+                        borderColor: ['#10b981', '#f43f5e'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#9ca3af' } },
+                        x: { grid: { display: false }, ticks: { color: '#9ca3af' } }
+                    }
+                }
+            });
+
+            // 3. Course Department allocations Spread doughnut
+            const depts = {};
+            Object.values(studentsDB).forEach(s => {
+                depts[s.department] = (depts[s.department] || 0) + 1;
+            });
+
+            new Chart(document.getElementById('courseSpreadChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(depts),
+                    datasets: [{
+                        data: Object.values(depts),
+                        backgroundColor: ['rgba(59, 130, 246, 0.8)', 'rgba(6, 182, 212, 0.8)', 'rgba(139, 92, 246, 0.8)', 'rgba(245, 158, 11, 0.8)'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#9ca3af', font: { size: 10 } } } }
+                }
+            });
+        }
+
+        function renderActivityLogs() {
+            const logsBox = document.getElementById("activity-log-box");
+            if (!logsBox) return;
+
+            const logs = [
+                { time: "Just Now", type: "info", text: "Demo university dataset successfully pre-seeded on startup." },
+                { time: "10 mins ago", type: "success", text: "Billing statements calculated for top merit-grade students." },
+                { time: "1 hr ago", type: "warning", text: "At-Risk system flagged Rahul Verma for Low Attendance in Python." },
+                { time: "Yesterday", type: "info", text: "Full workspace directory scanned: 14 project source files mapped." }
+            ];
+
+            let html = "";
+            logs.forEach(l => {
+                const borderColors = { info: "#3b82f6", success: "#10b981", warning: "#f59e0b" };
+                html += `
+                    <div style="padding:10px; background:rgba(255,255,255,0.02); border-radius:6px; border-left:3px solid ${borderColors[l.type]}; display:flex; justify-content:space-between; align-items:center; gap:12px;">
+                        <span style="font-size:12px; color:var(--text-primary); line-height:1.4;">${l.text}</span>
+                        <span style="font-size:10px; color:var(--text-muted); flex-shrink:0;">${l.time}</span>
+                    </div>
+                `;
+            });
+            logsBox.innerHTML = html;
+        }
+
+        function updateCalendarWidget() {
+            const dateVal = document.getElementById("widget-date");
+            const dayMonthVal = document.getElementById("widget-day-month");
+            if (!dateVal) return;
+
+            const now = new Date();
+            dateVal.innerText = now.getDate();
+            dayMonthVal.innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', year: 'numeric' });
+        }
+    </script>
+</body>
+
+</html>

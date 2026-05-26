@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus SaaS - Dayananda Sagar College of Engineering</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Floating Navbar -->
+    <nav class="glass-panel"
+        style="position: fixed; top: 20px; left: 5%; width: 90%; height: 70px; z-index: 1000; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; border-radius: 40px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+        <div
+            style="display: flex; align-items: center; gap: 12px; font-family: var(--font-heading); font-weight: 800; font-size: 22px;">
+            <i class="ri-radar-line"
+                style="font-size: 28px; background: linear-gradient(135deg, var(--accent-blue), var(--accent-cyan)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;"></i>
+            <span
+                style="background: linear-gradient(135deg, var(--text-primary), var(--text-secondary)); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent;">SMART
+                CAMPUS</span>
+        </div>
+        <div style="display: flex; gap: 32px; font-size: 14px; font-weight: 600; color: var(--text-secondary);"
+            class="no-print">
+            <a href="#features" style="transition: color 0.2s;">System Features</a>
+            <a href="https://dayanandasagar.edu" target="_blank" style="transition: color 0.2s;">DSCE Homepage</a>
+            <a href="login.html" class="btn btn-primary"
+                style="padding: 8px 24px; border-radius: 20px; font-size: 13px;">Portal Sign In</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="landing-hero">
+        <h1 class="landing-title">
+            The Future of Academic Administration at <span>Dayananda Sagar</span>
+        </h1>
+        <p class="landing-desc">
+            A state-of-the-art academic SaaS management system designed with glassmorphic layouts, instant LocalStorage
+            database sync, dynamic VTU SGPAs calculators, and interactive performance charts.
+        </p>
+        <div style="display: flex; gap: 20px;" class="no-print">
+            <a href="login.html" class="btn btn-primary"
+                style="padding: 14px 32px; font-size: 15px; border-radius: 30px;">
+                Access Dashboard Portal <i class="ri-arrow-right-line"></i>
+            </a>
+            <a href="#features" class="btn btn-secondary"
+                style="padding: 14px 32px; font-size: 15px; border-radius: 30px;">
+                Explore Features
+            </a>
+        </div>
+
+        <!-- Hero Metrics cards -->
+        <div class="stats-grid" style="width: 80%; max-width: 1000px; margin-top: 80px; text-align: left;">
+            <div class="stat-card glass-panel" style="border-radius: var(--border-radius-md);">
+                <div class="stat-info">
+                    <span class="stat-label">System Performance</span>
+                    <span class="stat-value">100% Client</span>
+                </div>
+                <div class="stat-icon blue"><i class="ri-cpu-line"></i></div>
+            </div>
+            <div class="stat-card glass-panel" style="border-radius: var(--border-radius-md);">
+                <div class="stat-info">
+                    <span class="stat-label">Active Modules</span>
+                    <span class="stat-value">9 Integrated</span>
+                </div>
+                <div class="stat-icon cyan"><i class="ri-git-merge-line"></i></div>
+            </div>
+            <div class="stat-card glass-panel" style="border-radius: var(--border-radius-md);">
+                <div class="stat-info">
+                    <span class="stat-label">Campus Framework</span>
+                    <span class="stat-value">SaaS 3.5</span>
+                </div>
+                <div class="stat-icon purple"><i class="ri-window-line"></i></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <h2 class="features-title">Complete 9-in-1 Smart Management Suite</h2>
+        <div class="features-grid">
+            <div class="feature-item glass-panel">
+                <div class="feature-icon"><i class="ri-user-add-line"></i></div>
+                <h3>Student Registration</h3>
+                <p>Register records with 10-digit validation rules, email duplications control, and dynamic profile
+                    photo preview rendering.</p>
+            </div>
+            <div class="feature-item glass-panel">
+                <div class="feature-icon"><i class="ri-book-open-line"></i></div>
+                <h3>Course Enroller</h3>
+                <p>Track class capacities in real-time, handle drag-and-drop waitlist pipelines, and promote students
+                    automatically.</p>
+            </div>
+            <div class="feature-item glass-panel">
+                <div class="feature-icon"><i class="ri-bank-card-line"></i></div>
+                <h3>Fee Calculation System</h3>
+                <p>Auto-generate tuition fees slips, calculate scholarship deductions, compute overdue late fees, and
+                    simulate collections.</p>
+            </div>
+            <div class="feature-item glass-panel">
+                <div class="feature-icon"><i class="ri-bar-chart-box-line"></i></div>
+                <h3>Performance Analytics</h3>
+                <p>Simulate descriptive statistical analysis like mean, median, standard deviations, and generate
+                    at-risk indicators.</p>
+            </div>
+            <div class="feature-item glass-panel">
+                <div class="feature-icon"><i class="ri-article-line"></i></div>
+                <h3>VTU Grade Card Registry</h3>
+                <p>Detailed semester credit weightages ledger, attendance tracking tables, SGPA/CGPA formulas, and
+                    printable transcripts.</p>
+            </div>
+            <div class="feature-item glass-panel">
+                <div class="feature-icon"><i class="ri-file-chart-line"></i></div>
+                <h3>Directory Scanner & Exports</h3>
+                <p>Scan virtual project workspaces, filter items categories, drag upload files, and export data directly
+                    to CSV.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer
+        style="padding: 40px; border-top: 1px solid var(--glass-border); text-align: center; font-size: 13px; color: var(--text-secondary); background: var(--bg-secondary);">
+        <p>© 2026 Dayananda Sagar College of Engineering. Developed as part of Python Laboratory conversion series.</p>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

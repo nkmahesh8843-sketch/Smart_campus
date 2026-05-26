@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Console - Academic Records</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Unified Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Header Component -->
+            <header class="main-header" id="main-header"></header>
+
+            <!-- Content Area -->
+            <main class="content-body">
+
+                <!-- Split Grid Layout: Marks Logger (Left) & Semester Transcript (Right) -->
+                <div style="display:grid; grid-template-columns: 1fr 1.3fr; gap:24px; align-items:flex-start;">
+
+                    <!-- Marks and Attendance Logger Form -->
+                    <div class="glass-panel form-card">
+                        <h2 class="form-title"><i class="ri-edit-box-line" style="color:var(--accent-blue);"></i>
+                            Semester Grades & Attendance Logger</h2>
+                        <form id="grades-logger-form" onsubmit="saveAcademicRecord(event)"
+                            style="display:flex; flex-direction:column; gap:16px;">
+
+                            <div class="form-group">
+                                <label class="form-label">Select Student</label>
+                                <select id="logger-student-select" class="form-control form-select"
+                                    onchange="loadStudentEnrolledCourses()" required>
+                                    <option value="">-- Choose Profile --</option>
+                                    <!-- Active students loaded here -->
+                                </select>
+                            </div>
+
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Semester Term</label>
+                                    <select id="logger-semester" class="form-control form-select" required>
+                                        <option value="1">1st Semester</option>
+                                        <option value="2">2nd Semester</option>
+                                        <option value="3">3rd Semester</option>
+                                        <option value="4">4th Semester</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Course Registered</label>
+                                    <select id="logger-course-select" class="form-control form-select" required>
+                                        <!-- Enrolled courses populated dynamically on student select -->
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Grade Awarded (VTU scale)</label>
+                                <select id="logger-grade" class="form-control form-select" required>
+                                    <option value="O">O (Outstanding - 10 GP)</option>
+                                    <option value="A+">A+ (Excellent - 9 GP)</option>
+                                    <option value="A">A (Very Good - 8 GP)</option>
+                                    <option value="B+">B+ (Good - 7 GP)</option>
+                                    <option value="B">B (Above Average - 6 GP)</option>
+                                    <option value="C">C (Average - 5 GP)</option>
+                                    <option value="P">P (Pass - 4 GP)</option>
+                                    <option value="F">F (Fail - 0 GP)</option>
+                                </select>
+                            </div>
+
+                            <!-- Attendance items -->
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Present Lectures Count</label>
+                                    <input type="number" id="logger-attendance-present" class="form-control"
+                                        placeholder="45" min="0" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Total Conducted Lectures</label>
+                                    <input type="number" id="logger-attendance-total" class="form-control"
+                                        placeholder="50" min="1" required>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">Save Marks
+                                & Attendance</button>
+                        </form>
+                    </div>
+
+                    <!-- Transcript and Semester Explorer -->
+                    <div class="glass-panel table-card">
+                        <div class="controls-row" style="margin-bottom:20px;">
+                            <h2 style="font-family:var(--font-heading); font-size:18px; font-weight:700;">Student
+                                Marksheet Viewer</h2>
+
+                            <div class="filters-box">
+                                <select id="viewer-student-select" class="form-control form-select"
+                                    style="padding: 8px 12px; font-size:13px;" onchange="loadStudentGradeSheet()">
+                                    <!-- Active students loaded here -->
+                                </select>
+                                <select id="viewer-semester-select" class="form-control form-select"
+                                    style="padding: 8px 12px; font-size:13px;" onchange="loadStudentGradeSheet()">
+                                    <option value="1">1st Semester</option>
+                                    <option value="2">2nd Semester</option>
+                                    <option value="3">3rd Semester</option>
+                                    <option value="4">4th Semester</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Grade sheet details table -->
+                        <div class="table-responsive">
+                            <table class="custom-table" style="font-size:13px;">
+                                <thead>
+                                    <tr>
+                                        <th>Course Code</th>
+                                        <th>Course Name</th>
+                                        <th>Credits</th>
+                                        <th>Grade</th>
+                                        <th>Grade Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="viewer-table-body">
+                                    <!-- Dynamic rows loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Statistics Panel -->
+                        <div
+                            style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:20px; padding:16px; background:rgba(255,255,255,0.02); border-radius:var(--border-radius-sm); border:1px solid var(--glass-border);">
+                            <div>
+                                <div style="font-size:11px; color:var(--text-secondary); text-transform:uppercase;">
+                                    Semester SGPA</div>
+                                <div style="font-size:24px; font-weight:700; color:var(--accent-blue); margin-top:4px;"
+                                    id="viewer-sgpa-display">0.00</div>
+                            </div>
+                            <div>
+                                <div style="font-size:11px; color:var(--text-secondary); text-transform:uppercase;">
+                                    Cumulative CGPA</div>
+                                <div style="font-size:24px; font-weight:700; color:var(--accent-cyan); margin-top:4px;"
+                                    id="viewer-cgpa-display">0.00</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top:16px; text-align:right;" class="no-print">
+                            <button class="btn btn-primary" onclick="openOfficialTranscriptModal()"><i
+                                    class="ri-printer-line"></i> Generate Grade Report</button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Official Report Card / Print Modal -->
+    <div class="modal-overlay" id="transcript-print-modal">
+        <div class="modal-card glass-panel" style="max-width:650px; padding:0;">
+            <i class="ri-close-line modal-close no-print" onclick="closeModal('transcript-print-modal')"
+                style="z-index: 10;"></i>
+
+            <div class="printable-report-card" id="transcript-print-wrapper" style="padding:40px;">
+                <div style="text-align:center; margin-bottom:30px;">
+                    <h2
+                        style="font-family:var(--font-heading); font-size:22px; font-weight:800; color:var(--text-primary); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;">
+                        Dayananda Sagar College of Engineering</h2>
+                    <span style="font-size:12px; color:var(--text-secondary);">An Autonomous Institution affiliated to
+                        VTU • Belagavi</span>
+                    <h3
+                        style="margin-top:16px; font-size:16px; font-weight:700; color:var(--accent-blue); border-top:1px dashed var(--glass-border); border-bottom:1px dashed var(--glass-border); padding:8px 0; letter-spacing:1px;">
+                        OFFICIAL SEMESTER GRADE REPORT</h3>
+                </div>
+
+                <div
+                    style="display:grid; grid-template-columns:1fr 1fr; gap:12px; font-size:13px; margin-bottom:24px; padding-bottom:12px; border-bottom:1px solid var(--glass-border);">
+                    <div><strong>Student Name:</strong> <span id="tp-name">Arjun Sharma</span></div>
+                    <div><strong>Student ID (USN):</strong> <span id="tp-id">DSCE2026000</span></div>
+                    <div><strong>Department Domain:</strong> <span id="tp-dept">CSE</span></div>
+                    <div><strong>Semester Term:</strong> <span id="tp-sem">1st Semester</span></div>
+                </div>
+
+                <div class="table-responsive" style="margin-bottom:24px;">
+                    <table class="custom-table" style="font-size:12px;">
+                        <thead>
+                            <tr>
+                                <th>Subject Code</th>
+                                <th>Subject Name</th>
+                                <th>Credits</th>
+                                <th>Grade Assigned</th>
+                                <th>Grade Points</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tp-table-body">
+                            <!-- Dynamic report lines -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div
+                    style="display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:16px; background:rgba(255,255,255,0.02); border-radius:8px; border:1px solid var(--glass-border); margin-bottom:30px;">
+                    <div><strong>Semester SGPA:</strong> <span id="tp-sgpa"
+                            style="color:var(--accent-blue); font-weight:700;">8.75</span></div>
+                    <div><strong>Cumulative CGPA:</strong> <span id="tp-cgpa"
+                            style="color:var(--accent-cyan); font-weight:700;">8.75</span></div>
+                </div>
+
+                <div
+                    style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary); margin-top:40px;">
+                    <div
+                        style="border-top:1px solid var(--glass-border); width:150px; padding-top:6px; text-align:center;">
+                        Registrar Signature</div>
+                    <div
+                        style="border-top:1px solid var(--glass-border); width:150px; padding-top:6px; text-align:center;">
+                        Dean Academics</div>
+                </div>
+            </div>
+
+            <div style="padding:20px 40px; background:rgba(255,255,255,0.01); border-top:1px solid var(--glass-border); display:flex; gap:12px;"
+                class="no-print">
+                <button class="btn btn-secondary" style="flex-grow:1;"
+                    onclick="closeModal('transcript-print-modal')">Close</button>
+                <button class="btn btn-primary" style="flex-grow:1;" onclick="window.print()"><i
+                        class="ri-printer-line"></i> Print Official Report Card</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // --- Academic Records core script ---
+        const GRADE_POINTS = { "O": 10, "A+": 9, "A": 8, "B+": 7, "B": 6, "C": 5, "P": 4, "F": 0 };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadStudentSelects();
+            loadStudentEnrolledCourses();
+            loadStudentGradeSheet();
+        });
+
+        function loadStudentSelects() {
+            const selectLog = document.getElementById("logger-student-select");
+            const selectView = document.getElementById("viewer-student-select");
+
+            selectLog.innerHTML = `<option value="">-- Choose Profile --</option>`;
+            selectView.innerHTML = "";
+
+            Object.values(studentsDB).filter(s => s.is_active).forEach(s => {
+                const opt = `<option value="${s.student_id}">${s.student_id} - ${s.name}</option>`;
+                selectLog.innerHTML += opt;
+                selectView.innerHTML += opt;
+            });
+        }
+
+        function loadStudentEnrolledCourses() {
+            const sid = document.getElementById("logger-student-select").value;
+            const selectCourse = document.getElementById("logger-course-select");
+
+            selectCourse.innerHTML = "";
+            if (!sid) return;
+
+            const enrollments = Object.values(enrollmentsDB).filter(e => e.student_id === sid && e.status === "Enrolled");
+
+            if (enrollments.length === 0) {
+                selectCourse.innerHTML = `<option value="">-- No active courses --</option>`;
+                return;
+            }
+
+            enrollments.forEach(e => {
+                selectCourse.innerHTML += `<option value="${e.course_code}">${e.course_code} - ${e.course_name}</option>`;
+            });
+        }
+
+        function saveAcademicRecord(e) {
+            e.preventDefault();
+            const sid = document.getElementById("logger-student-select").value;
+            const sem = document.getElementById("logger-semester").value;
+            const courseCode = document.getElementById("logger-course-select").value;
+            const grade = document.getElementById("logger-grade").value;
+            const present = parseInt(document.getElementById("logger-attendance-present").value);
+            const total = parseInt(document.getElementById("logger-attendance-total").value);
+
+            if (!sid || !courseCode) return;
+
+            if (present > total) {
+                showToast("Data Entry Alert", "Present days cannot exceed total conducted lecture days.", "error");
+                return;
+            }
+
+            // Fetch course details
+            const course = coursesDB[courseCode];
+            const gp = GRADE_POINTS[grade];
+
+            // 1. Save grade details
+            if (!academicDB[sid].semesters[sem]) {
+                academicDB[sid].semesters[sem] = [];
+            }
+
+            // Checks duplicate grade log for this course in the same semester
+            let existsIdx = academicDB[sid].semesters[sem].findIndex(c => c.course_code === courseCode);
+            const logEntry = {
+                course_code: courseCode,
+                course_name: course.name,
+                credits: course.credits,
+                grade: grade,
+                grade_points: gp
+            };
+
+            if (existsIdx > -1) {
+                academicDB[sid].semesters[sem][existsIdx] = logEntry;
+            } else {
+                academicDB[sid].semesters[sem].push(logEntry);
+            }
+
+            // 2. Save Attendance logs
+            academicDB[sid].attendance[courseCode] = {
+                present: present,
+                total: total,
+                pct: Math.round(100 * present / total)
+            };
+
+            // 3. Mark course enrollment as Completed if passed
+            const enrollmentId = `${sid}_${courseCode}`;
+            if (enrollmentsDB[enrollmentId]) {
+                enrollmentsDB[enrollmentId].status = grade === 'F' ? 'Enrolled' : 'Completed';
+                enrollmentsDB[enrollmentId].grade = grade;
+            }
+
+            saveAllData();
+            showToast("Records Logged", `Successfully saved grade ${grade} and attendance sheet for USN ${sid}.`, "success");
+
+            // Reload viewer to sync changes
+            document.getElementById("viewer-student-select").value = sid;
+            document.getElementById("viewer-semester-select").value = sem;
+            loadStudentGradeSheet();
+            document.getElementById("grades-logger-form").reset();
+            document.getElementById("logger-course-select").innerHTML = "";
+        }
+
+        function loadStudentGradeSheet() {
+            const sid = document.getElementById("viewer-student-select").value;
+            const sem = document.getElementById("viewer-semester-select").value;
+            const tbody = document.getElementById("viewer-table-body");
+
+            if (!tbody) return;
+            tbody.innerHTML = "";
+
+            if (!sid) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted);">Please select a student above to access grades.</td></tr>`;
+                return;
+            }
+
+            const record = academicDB[sid];
+            if (!record || !record.semesters || !record.semesters[sem] || record.semesters[sem].length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-secondary);">No grades recorded yet for Semester ${sem}.</td></tr>`;
+                document.getElementById("viewer-sgpa-display").innerText = "0.00";
+                document.getElementById("viewer-cgpa-display").innerText = calculateCGPA(sid).toFixed(2);
+                return;
+            }
+
+            const semCourses = record.semesters[sem];
+            semCourses.forEach(c => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${c.course_code}</strong></td>
+                        <td>${c.course_name}</td>
+                        <td>${c.credits}</td>
+                        <td><span class="badge ${c.grade === 'F' ? 'danger' : 'info'}">${c.grade}</span></td>
+                        <td><strong>${c.grade_points}</strong></td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById("viewer-sgpa-display").innerText = calculateSGPA(sid, sem).toFixed(2);
+            document.getElementById("viewer-cgpa-display").innerText = calculateCGPA(sid).toFixed(2);
+        }
+
+        // Print details card
+        function openOfficialTranscriptModal() {
+            const sid = document.getElementById("viewer-student-select").value;
+            const sem = document.getElementById("viewer-semester-select").value;
+
+            if (!sid) {
+                showToast("Print Request", "Select a valid student USN profile first.", "error");
+                return;
+            }
+
+            const s = studentsDB[sid];
+            const records = academicDB[sid];
+
+            if (!records || !records.semesters || !records.semesters[sem] || records.semesters[sem].length === 0) {
+                showToast("Print Request", "No marksheet records available to build reports.", "error");
+                return;
+            }
+
+            document.getElementById("tp-name").innerText = s.name;
+            document.getElementById("tp-id").innerText = s.student_id;
+            document.getElementById("tp-dept").innerText = s.department;
+            document.getElementById("tp-sem").innerText = `${sem} Semester`;
+
+            const tbody = document.getElementById("tp-table-body");
+            tbody.innerHTML = "";
+
+            records.semesters[sem].forEach(c => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${c.course_code}</strong></td>
+                        <td>${c.course_name}</td>
+                        <td>${c.credits}</td>
+                        <td>${c.grade}</td>
+                        <td>${c.grade_points}</td>
+                    </tr>
+                `;
+            });
+
+            document.getElementById("tp-sgpa").innerText = calculateSGPA(sid, sem).toFixed(2);
+            document.getElementById("tp-cgpa").innerText = calculateCGPA(sid).toFixed(2);
+
+            openModal("transcript-print-modal");
+        }
+    </script>
+</body>
+
+</html>

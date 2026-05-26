@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Console - Reports & Scanning</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Unified Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Header Component -->
+            <header class="main-header" id="main-header"></header>
+
+            <!-- Content Area -->
+            <main class="content-body">
+
+                <!-- Split Grid Layout: File Manager (Left) & Export Hub (Right) -->
+                <div style="display:grid; grid-template-columns: 2fr 1fr; gap:24px; align-items:flex-start;">
+
+                    <!-- Virtual Directory Scanner and File Manager Panel -->
+                    <div class="glass-panel"
+                        style="padding:24px; min-height:500px; display:flex; flex-direction:column; gap:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <h2
+                                style="font-family:var(--font-heading); font-size:18px; font-weight:700; display:flex; align-items:center; gap:8px;">
+                                <i class="ri-folder-open-line" style="color:var(--accent-blue);"></i> Virtual Directory
+                                Scanner File Manager
+                            </h2>
+                            <button class="btn btn-secondary" style="padding:6px 12px; font-size:12px;"
+                                onclick="runDirectoryWalkScan()"><i class="ri-radar-line"></i> Re-Scan
+                                Directory</button>
+                        </div>
+
+                        <!-- Progress Bar for Scanning -->
+                        <div style="display:none; flex-direction:column; gap:8px;" id="scanning-progress-box">
+                            <div
+                                style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-secondary);">
+                                <span>Scanning project directory walk: <code>/smart-campus/</code></span>
+                                <span id="scanning-pct">0%</span>
+                            </div>
+                            <div class="progress-bar-bg" style="height:8px;">
+                                <div class="progress-bar-fill" id="scanning-progress-fill"
+                                    style="width:0%; background:var(--accent-blue);"></div>
+                            </div>
+                        </div>
+
+                        <!-- File Dropzone Area -->
+                        <div class="file-dropzone no-print" id="file-dropzone-panel"
+                            ondragover="allowFileDragOver(event)" ondragleave="handleFileDragLeave()"
+                            ondrop="handleFileDrop(event)">
+                            <i class="ri-upload-cloud-2-line" style="font-size:36px; color:var(--accent-blue);"></i>
+                            <div style="margin-top:10px;">Drag & Drop files here or click to simulate importing
+                                python/csv resources.</div>
+                            <div style="font-size:11px; color:var(--text-muted); margin-top:4px;">Supported extensions:
+                                .py, .csv, .json, .log (Max 2MB)</div>
+                            <input type="file" id="dropzone-file-input" style="display:none;"
+                                onchange="handleFileSelected(event)">
+                        </div>
+
+                        <!-- Directory list tree -->
+                        <div style="display:flex; flex-direction:column; gap:16px;">
+                            <h3
+                                style="font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-secondary);">
+                                Workspace Structure Mapped</h3>
+
+                            <div style="display:flex; flex-direction:column; gap:10px;" id="directory-tree-box">
+                                <!-- Dynamic tree listing injected here -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Export Hub and Backup Controls -->
+                    <div class="glass-panel" style="padding:24px; display:flex; flex-direction:column; gap:24px;">
+                        <h2 style="font-family:var(--font-heading); font-size:16px; font-weight:700;"><i
+                                class="ri-download-cloud-2-line" style="color:var(--accent-emerald);"></i> Export &
+                            Backup Hub</h2>
+
+                        <div style="display:flex; flex-direction:column; gap:12px;">
+                            <div style="font-size:12px; color:var(--text-secondary); line-height:1.5;">
+                                Extract compiled Dayananda Sagar database structures to secure local files. Simulated
+                                backups preserve configurations.
+                            </div>
+
+                            <button class="btn btn-primary"
+                                style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;"
+                                onclick="downloadDatabaseJSON(DB_KEYS.STUDENTS, 'students_registry')">
+                                <i class="ri-file-code-line"></i> Backup Student Registry (JSON)
+                            </button>
+                            <button class="btn btn-primary"
+                                style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;"
+                                onclick="downloadDatabaseJSON(DB_KEYS.ACADEMIC, 'academic_ledger')">
+                                <i class="ri-file-code-line"></i> Backup Academic Ledger (JSON)
+                            </button>
+                            <button class="btn btn-secondary"
+                                style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px;"
+                                onclick="exportFeeTransactionsCSV()">
+                                <i class="ri-file-excel-line"></i> Download Fees Ledger (CSV)
+                            </button>
+                        </div>
+
+                        <div
+                            style="border-top:1px solid var(--glass-border); padding-top:20px; display:flex; flex-direction:column; gap:12px;">
+                            <h3 style="font-size:13px; font-weight:600; color:var(--text-secondary);">Database Actions
+                            </h3>
+                            <button class="btn btn-danger" style="width:100%;" onclick="confirmResetDatabase()"><i
+                                    class="ri-delete-bin-5-line"></i> Clear & Reset to Seeds</button>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // --- Reports and Virtual Scanner Scripts ---
+        document.addEventListener("DOMContentLoaded", () => {
+            renderDirectoryTree();
+
+            // Set up click upload
+            const dropzone = document.getElementById("file-dropzone-panel");
+            dropzone.addEventListener("click", () => {
+                document.getElementById("dropzone-file-input").click();
+            });
+        });
+
+        function renderDirectoryTree() {
+            const box = document.getElementById("directory-tree-box");
+            if (!box) return;
+
+            // Group files by category
+            const categories = {};
+            filesDB.forEach(f => {
+                categories[f.category] = categories[f.category] || [];
+                categories[f.category].push(f);
+            });
+
+            box.innerHTML = "";
+            Object.keys(categories).forEach(cat => {
+                let filesHTML = "";
+                categories[cat].forEach(file => {
+                    filesHTML += `
+                        <div style="padding:8px 12px; display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.01); border:1px solid var(--glass-border); border-radius:6px; font-size:12px; margin-left:16px;">
+                            <span style="display:flex; align-items:center; gap:8px; font-family:monospace; color:var(--text-primary);">
+                                <i class="${getFileIconClass(file.extension)}" style="font-size:16px;"></i> ${file.name}
+                            </span>
+                            <span style="color:var(--text-muted); font-size:11px;">${file.size_kb.toFixed(2)} KB</span>
+                        </div>
+                    `;
+                });
+
+                box.innerHTML += `
+                    <div style="display:flex; flex-direction:column; gap:6px;">
+                        <div style="font-size:12px; font-weight:700; color:var(--accent-blue); display:flex; align-items:center; gap:6px; cursor:pointer;">
+                            <i class="ri-folder-fill" style="font-size:16px;"></i> ${cat}
+                        </div>
+                        <div style="display:flex; flex-direction:column; gap:6px;">
+                            ${filesHTML}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        function getFileIconClass(ext) {
+            const icons = {
+                ".py": "ri-braces-line",
+                ".csv": "ri-file-excel-2-line",
+                ".json": "ri-file-code-line",
+                ".log": "ri-terminal-window-line"
+            };
+            return icons[ext] || "ri-file-3-line";
+        }
+
+        // --- Simulated Scan Process ---
+        function runDirectoryWalkScan() {
+            const progressBox = document.getElementById("scanning-progress-box");
+            const fill = document.getElementById("scanning-progress-fill");
+            const pctText = document.getElementById("scanning-pct");
+
+            progressBox.style.display = "flex";
+            fill.style.width = "0%";
+            pctText.innerText = "0%";
+
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += 5;
+                fill.style.width = `${progress}%`;
+                pctText.innerText = `${progress}%`;
+
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        progressBox.style.display = "none";
+                        showToast("Scan Complete", "Scanned 14 files across 3 virtual workspace directories.", "success");
+                    }, 500);
+                }
+            }, 80);
+        }
+
+        // --- Drag & Drop Handlers ---
+        function allowFileDragOver(e) {
+            e.preventDefault();
+            document.getElementById("file-dropzone-panel").classList.add("dragover");
+        }
+
+        function handleFileDragLeave() {
+            document.getElementById("file-dropzone-panel").classList.remove("dragover");
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            document.getElementById("file-dropzone-panel").classList.remove("dragover");
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processUploadedFile(files[0]);
+            }
+        }
+
+        function handleFileSelected(e) {
+            const file = e.target.files[0];
+            if (file) {
+                processUploadedFile(file);
+            }
+        }
+
+        function processUploadedFile(file) {
+            const name = file.name;
+            const ext = "." + name.split('.').pop().toLowerCase();
+            const size = file.size / 1024; // KB
+
+            const supported = [".py", ".csv", ".json", ".log"];
+            if (!supported.includes(ext)) {
+                showToast("Extension Refused", "Only python source code, csv grids, JSON structures or logs are supported.", "error");
+                return;
+            }
+
+            const categoryMap = { ".py": "Python Scripts", ".csv": "Data Files", ".json": "Data Files", ".log": "Logs" };
+            const category = categoryMap[ext] || "Other Assets";
+
+            // Push simulated file item
+            filesDB.push({
+                name: name,
+                type: "file",
+                size_kb: size,
+                extension: ext,
+                category: category,
+                path: `/uploads/${name}`
+            });
+
+            saveAllData();
+            showToast("File Imported", `Simulated upload: Mapped ${name} to ${category}.`, "success");
+            renderDirectoryTree();
+        }
+
+        // --- JSON Backup Exports ---
+        function downloadDatabaseJSON(dbKey, filename) {
+            const data = localStorage.getItem(dbKey);
+            if (!data) {
+                showToast("Backup Refused", "Requested database list holds no active entities.", "error");
+                return;
+            }
+
+            const blob = new Blob([data], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = url;
+            link.download = `smart_campus_${filename}_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("JSON Backup", "System JSON catalog exported successfully.", "success");
+        }
+
+        function exportFeeTransactionsCSV() {
+            const records = Object.values(feesDB);
+            if (records.length === 0) {
+                showToast("Export Refused", "Fees ledger registry holds no billed records.", "error");
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Student ID,Department,Net Tuition,Hostel charges,Transport charges,Total Fee Billed,Paid,Settled On\n";
+
+            records.forEach(f => {
+                csvContent += `"${f.student_id}","${f.department}",${f.tuition_fee},${f.hostel_fee},${f.transport_fee},${f.total_fee},"${f.paid ? 'Yes' : 'No'}","${f.paid_on || ''}"\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.href = encodedUri;
+            link.download = `smart_campus_fees_transactions_${new Date().toISOString().split('T')[0]}.csv`;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast("CSV Export", "Fees ledger database exported successfully.", "success");
+        }
+
+        function confirmResetDatabase() {
+            if (confirm("Are you sure you want to completely reset the Smart Campus database back to default seed records? All customized profiles will be cleared.")) {
+                seedDemoData();
+                renderDirectoryTree();
+                showToast("Workspace Reset", "Refreshed and preloaded default seed items.", "info");
+            }
+        }
+    </script>
+</body>
+
+</html>

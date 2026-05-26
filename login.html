@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Portal - Sign In</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="auth-wrapper">
+        <div class="auth-card glass-panel" id="login-container">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="ri-radar-line"></i>
+                    <span>SMART CAMPUS</span>
+                </div>
+                <div class="auth-subtitle">Dayananda Sagar College of Engineering</div>
+            </div>
+
+            <!-- Role Tabs Selector -->
+            <div class="role-selector">
+                <div class="role-tab active" data-role="Admin" onclick="setRole('Admin', this)">Admin</div>
+                <div class="role-tab" data-role="Registrar" onclick="setRole('Student', this)">Student</div>
+                <div class="role-tab" data-role="Faculty" onclick="setRole('Faculty', this)">Faculty</div>
+            </div>
+
+            <form id="login-form" onsubmit="handleAuthLogin(event)"
+                style="display:flex; flex-direction:column; gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Email Address</label>
+                    <input type="email" id="auth-email" class="form-control" placeholder="admin@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="auth-password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">Sign In to
+                    Portal</button>
+            </form>
+
+            <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-secondary); margin-top:8px;"
+                class="no-print">
+                <a href="#" onclick="toggleAuthView('forgot')" style="transition:color 0.2s;">Forgot Password?</a>
+                <a href="#" onclick="toggleAuthView('signup')" style="transition:color 0.2s;">Create Account</a>
+            </div>
+        </div>
+
+        <!-- Simulated Sign Up Card -->
+        <div class="auth-card glass-panel" id="signup-container" style="display:none;">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="ri-radar-line"></i>
+                    <span>CREATE ACCOUNT</span>
+                </div>
+                <div class="auth-subtitle">Smart Campus Registrations</div>
+            </div>
+
+            <form onsubmit="handleAuthSignup(event)" style="display:flex; flex-direction:column; gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Full Name</label>
+                    <input type="text" id="signup-name" class="form-control" placeholder="Dr. Vikram Gowda" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Work Email</label>
+                    <input type="email" id="signup-email" class="form-control" placeholder="vikram@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Choose Password</label>
+                    <input type="password" class="form-control" placeholder="••••••••" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">Register
+                    Account</button>
+            </form>
+
+            <div style="text-align:center; font-size:12px; color:var(--text-secondary); margin-top:8px;"
+                class="no-print">
+                Already registered? <a href="#" onclick="toggleAuthView('login')" style="color:var(--accent-blue);">Sign
+                    In</a>
+            </div>
+        </div>
+
+        <!-- Simulated Forgot Password Card -->
+        <div class="auth-card glass-panel" id="forgot-container" style="display:none;">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="ri-radar-line"></i>
+                    <span>PASSWORD RESET</span>
+                </div>
+                <div class="auth-subtitle">Simulate System Verification</div>
+            </div>
+
+            <form onsubmit="handleAuthForgot(event)" style="display:flex; flex-direction:column; gap:16px;">
+                <div class="form-group">
+                    <label class="form-label">Enter Register Email</label>
+                    <input type="email" id="forgot-email" class="form-control" placeholder="Student@gmail.com"
+                        required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:8px;">Request Reset
+                    Link</button>
+            </form>
+
+            <div style="text-align:center; font-size:12px; color:var(--text-secondary); margin-top:8px;"
+                class="no-print">
+                Remembered details? <a href="#" onclick="toggleAuthView('login')" style="color:var(--accent-blue);">Sign
+                    In</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        let currentRole = 'Admin';
+
+        function setRole(role, element) {
+            currentRole = role;
+            document.querySelectorAll('.role-tab').forEach(tab => tab.classList.remove('active'));
+            element.classList.add('active');
+
+            // Adjust defaults for easy demo access
+            const emailInput = document.getElementById("auth-email");
+            if (role === 'Admin') emailInput.placeholder = "admin@gmail.com";
+            else if (role === 'Registrar') emailInput.placeholder = "Student@gmail.com";
+            else emailInput.placeholder = "faculty@gmail.com";
+        }
+
+        function toggleAuthView(view) {
+            document.getElementById("login-container").style.display = view === 'login' ? 'flex' : 'none';
+            document.getElementById("signup-container").style.display = view === 'signup' ? 'flex' : 'none';
+            document.getElementById("forgot-container").style.display = view === 'forgot' ? 'flex' : 'none';
+        }
+
+        function handleAuthLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById("auth-email").value.trim().toLowerCase();
+            const password = document.getElementById("auth-password").value.trim();
+
+            // Simple demo bypass
+            const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            if (validEmail && password.length >= 6) {
+                const registeredUser = lookupAuthUser(email);
+                const name = registeredUser ? registeredUser.name : (currentRole === 'Admin' ? 'Dean Administrator' : (currentRole === 'Registrar' ? 'Prof. Suresh Kumar' : 'Dr. Asha Sen'));
+                const sessionRole = registeredUser ? registeredUser.role : currentRole;
+
+                localStorage.setItem(DB_KEYS.SESSION, JSON.stringify({ name: name, role: sessionRole }));
+
+                showToast("Sign In Success", `Welcome back, ${name}! Redirecting...`, "success");
+                setTimeout(() => {
+                    window.location.href = 'dashboard.html';
+                }, 1000);
+            } else {
+                showToast("Sign In Failed", "Use any standard email address and password (min 6 chars) for the simulation.", "error");
+            }
+        }
+
+        function handleAuthSignup(e) {
+            e.preventDefault();
+            const name = document.getElementById("signup-name").value.trim();
+            const email = document.getElementById("signup-email").value.trim();
+
+            registerAuthUser(email, name, 'Student');
+            showToast("Account Created", "Account name and email have been saved for the next sign in.", "success");
+            setTimeout(() => {
+                toggleAuthView('login');
+                document.getElementById("auth-email").value = email;
+            }, 1000);
+        }
+
+        function handleAuthForgot(e) {
+            e.preventDefault();
+            const email = document.getElementById("forgot-email").value.trim();
+            showToast("Reset Link Sent", `Simulation: A password reset link has been dispatched to ${email}.`, "success");
+            setTimeout(() => {
+                toggleAuthView('login');
+            }, 1500);
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,9 @@
+{
+  "name": "smart-campus-website",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "init:firebase": "npx firebase-tools@latest init hosting",
+    "deploy": "npx firebase-tools@latest deploy --only hosting"
+  }
+}

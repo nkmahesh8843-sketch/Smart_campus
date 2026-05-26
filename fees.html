@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Console - Fees</title>
+    <!-- Icons and Fonts -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Unified Sidebar -->
+        <aside class="sidebar" id="sidebar"></aside>
+
+        <!-- Main Workspace -->
+        <div class="main-wrapper">
+            <!-- Header Component -->
+            <header class="main-header" id="main-header"></header>
+
+            <!-- Content Area -->
+            <main class="content-body">
+
+                <!-- Quick Summary Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel">
+                        <div class="stat-info">
+                            <span class="stat-label">Collections Volume</span>
+                            <span class="stat-value" id="fee-total-collected">Rs. 0</span>
+                        </div>
+                        <div class="stat-icon emerald"><i class="ri-bank-line"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-info">
+                            <span class="stat-label">Outstanding Invoices</span>
+                            <span class="stat-value" id="fee-total-pending">Rs. 0</span>
+                        </div>
+                        <div class="stat-icon rose"><i class="ri-refund-2-line"></i></div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-info">
+                            <span class="stat-label">Overdue Defaulters</span>
+                            <span class="stat-value" id="fee-defaulter-count">0 Defaulters</span>
+                        </div>
+                        <div class="stat-icon amber"><i class="ri-error-warning-line"></i></div>
+                    </div>
+                </div>
+
+                <!-- Two Column Layout: Billing Calculator (Left) & Ledger Records (Right) -->
+                <div style="display:grid; grid-template-columns: 1fr 1.3fr; gap:24px; align-items:flex-start;">
+
+                    <!-- Billing Calculator Form -->
+                    <div class="glass-panel form-card">
+                        <h2 class="form-title"><i class="ri-calculator-line" style="color:var(--accent-blue);"></i>
+                            Billed Fee Calculator</h2>
+                        <form id="calculator-form" onsubmit="calculateStudentInvoice(event)"
+                            style="display:flex; flex-direction:column; gap:16px;">
+
+                            <div class="form-group">
+                                <label class="form-label">Select Student Account</label>
+                                <select id="fee-student-select" class="form-control form-select"
+                                    onchange="autofillDept(this)" required>
+                                    <option value="">-- Choose Profile --</option>
+                                    <!-- Active students loaded here -->
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Department Billed</label>
+                                <input type="text" id="fee-dept-display" class="form-control"
+                                    placeholder="Automatically filled..." readonly>
+                            </div>
+
+                            <!-- Additional options toggles -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px; margin-top:4px;">
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="checkbox" id="fee-hostel-opt"
+                                        style="width:18px; height:18px; cursor:pointer;">
+                                    <label class="form-label" style="cursor:pointer; margin-top:2px;">Hostel Facility
+                                        (Rs.50,000)</label>
+                                </div>
+                                <div style="display:flex; align-items:center; gap:8px;">
+                                    <input type="checkbox" id="fee-transport-opt"
+                                        style="width:18px; height:18px; cursor:pointer;">
+                                    <label class="form-label" style="cursor:pointer; margin-top:2px;">Transport/Bus
+                                        (Rs.18,000)</label>
+                                </div>
+                            </div>
+
+                            <!-- Merit scholarship selector -->
+                            <div class="form-group">
+                                <label class="form-label">Merit Scholarship Waiver</label>
+                                <select id="fee-scholarship" class="form-control form-select">
+                                    <option value="None">No Waiver Scholarship</option>
+                                    <option value="merit_gold">Merit Gold Waiver (50% Tuition)</option>
+                                    <option value="merit_silver">Merit Silver Waiver (25% Tuition)</option>
+                                    <option value="sc_st">SC/ST Merit Waiver (75% Tuition)</option>
+                                    <option value="obc">OBC Scholarship Waiver (15% Tuition)</option>
+                                    <option value="sports">Sports Scholarship Waiver (10% Tuition)</option>
+                                </select>
+                            </div>
+
+                            <!-- Overdue and Due Calendar datepicker items -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:16px;">
+                                <div class="form-group">
+                                    <label class="form-label">Invoice Due Date</label>
+                                    <input type="date" id="fee-due-date" class="form-control" required>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Simulate Payment Date</label>
+                                    <input type="date" id="fee-pay-date" class="form-control">
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;">Calculate
+                                & Record Invoice</button>
+                        </form>
+                    </div>
+
+                    <!-- Invoice Ledger Table card -->
+                    <div class="glass-panel table-card">
+                        <h2
+                            style="font-family:var(--font-heading); font-size:18px; font-weight:700; margin-bottom:16px;">
+                            Invoice Account Transactions</h2>
+                        <div class="table-responsive">
+                            <table class="custom-table" style="font-size:13px;">
+                                <thead>
+                                    <tr>
+                                        <th>Student ID</th>
+                                        <th>Dept</th>
+                                        <th>Billed Total</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fees-table-body">
+                                    <!-- Dynamic rows loaded here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal 1: Payment Checkout Gateway simulation -->
+    <div class="modal-overlay" id="checkout-modal">
+        <div class="modal-card glass-panel" style="max-width:420px; text-align:center;">
+            <i class="ri-close-line modal-close" onclick="closeModal('checkout-modal')"></i>
+            <h3
+                style="font-family:var(--font-heading); font-size:20px; border-bottom:1px solid var(--glass-border); padding-bottom:12px; margin-bottom:20px;">
+                <i class="ri-bank-card-fill" style="color:var(--accent-blue);"></i> Secure Payments Gateway
+            </h3>
+
+            <div
+                style="padding:12px; background:rgba(255,255,255,0.02); border-radius:8px; margin-bottom:20px; border:1px solid var(--glass-border); text-align:left;">
+                <div style="font-size:11px; color:var(--text-secondary);">Billed Invoice Account</div>
+                <div style="font-size:16px; font-weight:700; color:var(--text-primary); margin-top:4px;"
+                    id="checkout-student-info">DSCE2026001 - Arjun</div>
+                <div style="font-size:22px; font-weight:800; color:var(--accent-emerald); margin-top:8px;"
+                    id="checkout-amount">Rs. 0.00</div>
+            </div>
+
+            <form onsubmit="handleProcessCheckout(event)"
+                style="display:flex; flex-direction:column; gap:16px; text-align:left;">
+                <div class="form-group">
+                    <label class="form-label">Credit Card Number</label>
+                    <input type="text" class="form-control" placeholder="4111 2222 3333 4444" pattern="[0-9 ]{16,19}"
+                        required>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                    <div class="form-group">
+                        <label class="form-label">Expiry Date</label>
+                        <input type="text" class="form-control" placeholder="12/29" pattern="[0-9/]{5}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">CVV/CVN</label>
+                        <input type="password" class="form-control" placeholder="•••" pattern="[0-9]{3}" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;"><i
+                        class="ri-shield-check-line"></i> Simulate Payout Authenticate</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Beautiful Frosted Invoice Slip modal panel -->
+    <div class="modal-overlay" id="receipt-modal">
+        <div class="modal-card glass-panel" style="max-width:500px; padding:0;">
+            <i class="ri-close-line modal-close no-print" onclick="closeModal('receipt-modal')"
+                style="z-index: 10;"></i>
+
+            <div class="printable-report-card" id="receipt-print-wrapper" style="padding:32px;">
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h3
+                        style="font-family:var(--font-heading); font-size:18px; font-weight:800; color:var(--text-primary); text-transform:uppercase; letter-spacing:0.5px;">
+                        Dayananda Sagar College of Engineering</h3>
+                    <span style="font-size:11px; color:var(--text-secondary);">VTU Affiliated Institution •
+                        Bangalore</span>
+                    <div
+                        style="margin-top:12px; font-size:15px; font-weight:700; color:var(--accent-blue); letter-spacing:1px; border-top:1px dashed var(--glass-border); border-bottom:1px dashed var(--glass-border); padding:6px 0;">
+                        OFFICIAL PAYMENT RECEIPT</div>
+                </div>
+
+                <div
+                    style="display:flex; justify-content:between; flex-direction:column; gap:6px; font-size:12px; margin-bottom:20px;">
+                    <div style="display:flex; justify-content:space-between;"><span><strong>Student Account
+                                ID:</strong></span> <span id="r-student-id">DSCE2026001</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span><strong>Department
+                                Domain:</strong></span> <span id="r-dept">CSE</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span><strong>Calculated
+                                Billed:</strong></span> <span id="r-date">2026-05-26</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span><strong>Transaction
+                                Settlement:</strong></span> <span id="r-paid">PAID</span></div>
+                </div>
+
+                <div
+                    style="border-top:1px solid var(--glass-border); border-bottom:1px solid var(--glass-border); padding:12px 0; margin-bottom:20px; font-size:12px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between;"><span>Tuition Annual Fee</span> <span
+                            id="r-tuition">Rs. 85,000</span></div>
+                    <div style="display:flex; justify-content:space-between; display:none;" id="r-scholarship-row"><span
+                            style="color:var(--accent-rose);">Scholarship waiver</span> <span id="r-scholarship"
+                            style="color:var(--accent-rose);">-Rs. 21,250</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Hostel Accommodations</span> <span
+                            id="r-hostel">Rs. 0</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Bus Transport Card</span> <span
+                            id="r-transport">Rs. 0</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Core Lab Facility</span> <span>Rs.
+                            5,000</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Examination fee</span> <span>Rs.
+                            2,500</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Library Access fee</span> <span>Rs.
+                            1,500</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Sports Council fee</span> <span>Rs.
+                            1,000</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span>Student Union Cards</span> <span>Rs.
+                            500</span></div>
+                    <div style="display:flex; justify-content:space-between; display:none;" id="r-late-row"><span
+                            style="color:var(--accent-rose);">Overdue late charges</span> <span id="r-late"
+                            style="color:var(--accent-rose);">Rs. 0</span></div>
+                </div>
+
+                <div
+                    style="display:flex; justify-content:space-between; font-size:16px; font-weight:800; color:var(--text-primary); margin-bottom:12px;">
+                    <span>TOTAL SETTLED</span>
+                    <span id="r-total" style="color:var(--accent-emerald);">Rs. 95,500</span>
+                </div>
+            </div>
+
+            <div style="padding:20px 32px; background:rgba(255,255,255,0.01); border-top:1px solid var(--glass-border); display:flex; gap:12px;"
+                class="no-print">
+                <button class="btn btn-secondary" style="flex-grow:1;"
+                    onclick="closeModal('receipt-modal')">Close</button>
+                <button class="btn btn-primary" style="flex-grow:1;" onclick="window.print()"><i
+                        class="ri-printer-line"></i> Print/Download Receipt</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // --- Fee Calculations Scripts ---
+        const BASE_TUITIONS = { CSE: 85000, ECE: 80000, ME: 75000, CE: 75000, EEE: 78000, ISE: 82000, AIML: 88000, DS: 86000 };
+        const SCHOLARSHIP_RATES = { merit_gold: 0.50, merit_silver: 0.25, sc_st: 0.75, obc: 0.15, sports: 0.10 };
+
+        let checkoutTargetSid = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadStudentsSelector();
+            loadFeesTable();
+            renderSummaryCards();
+
+            // Set defaults for date calendars
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById("fee-due-date").value = today;
+            document.getElementById("fee-pay-date").value = today;
+        });
+
+        function loadStudentsSelector() {
+            const select = document.getElementById("fee-student-select");
+            select.innerHTML = `<option value="">-- Choose Profile --</option>`;
+
+            Object.values(studentsDB).filter(s => s.is_active).forEach(s => {
+                select.innerHTML += `<option value="${s.student_id}">${s.student_id} - ${s.name}</option>`;
+            });
+        }
+
+        function autofillDept(selectElement) {
+            const sid = selectElement.value;
+            const display = document.getElementById("fee-dept-display");
+
+            if (!sid || !studentsDB[sid]) {
+                display.value = "";
+                return;
+            }
+            display.value = studentsDB[sid].department;
+        }
+
+        function calculateStudentInvoice(e) {
+            e.preventDefault();
+            const sid = document.getElementById("fee-student-select").value;
+            const dept = document.getElementById("fee-dept-display").value;
+            const hostelOpt = document.getElementById("fee-hostel-opt").checked;
+            const transportOpt = document.getElementById("fee-transport-opt").checked;
+            const scholarship = document.getElementById("fee-scholarship").value;
+            const dueDateStr = document.getElementById("fee-due-date").value;
+            const payDateStr = document.getElementById("fee-pay-date").value || new Date().toISOString().split('T')[0];
+
+            if (!sid) return;
+
+            const base = BASE_TUITIONS[dept] || 80000;
+            const discount = scholarship !== "None" ? base * (SCHOLARSHIP_RATES[scholarship] || 0) : 0.0;
+            const netTuition = base - discount;
+
+            const hostelFee = hostelOpt ? 50000 : 0;
+            const transportFee = transportOpt ? 18000 : 0;
+
+            // Late fee calculations: Rs. 100 per day after due date, max Rs. 5000
+            const due = new Date(dueDateStr);
+            const pay = new Date(payDateStr);
+            const diffDays = Math.ceil((pay - due) / (1000 * 60 * 60 * 24));
+
+            let lateFee = 0;
+            if (diffDays > 0) {
+                lateFee = Math.min(diffDays * 100, 5000);
+            }
+
+            const subtotal = netTuition + hostelFee + transportFee + 2500 + 1500 + 1000 + 5000 + 500;
+            const total = subtotal + lateFee;
+
+            feesDB[sid] = {
+                student_id: sid,
+                department: dept,
+                tuition_fee: netTuition,
+                scholarship_type: scholarship,
+                scholarship_disc: discount,
+                hostel_fee: hostelFee,
+                transport_fee: transportFee,
+                exam_fee: 2500,
+                library_fee: 1500,
+                sports_fee: 1000,
+                lab_fee: 5000,
+                student_union_fee: 500,
+                late_fee: lateFee,
+                total_fee: total,
+                calculated_on: new Date().toISOString().replace('T', ' ').split('.')[0],
+                paid: false,
+                paid_on: null
+            };
+
+            saveAllData();
+            showToast("Invoice Billed", `Successfully generated billed statement ledger for student ID ${sid}.`, "success");
+            loadFeesTable();
+            renderSummaryCards();
+            document.getElementById("calculator-form").reset();
+            document.getElementById("fee-dept-display").value = "";
+        }
+
+        function loadFeesTable() {
+            const tbody = document.getElementById("fees-table-body");
+            if (!tbody) return;
+
+            tbody.innerHTML = "";
+            const records = Object.values(feesDB);
+
+            if (records.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:var(--text-secondary); padding:20px;">No fee ledger entries billed yet.</td></tr>`;
+                return;
+            }
+
+            records.forEach(f => {
+                const statusBadge = f.paid ? `<span class="badge success">Paid</span>` : `<span class="badge danger">Unpaid</span>`;
+                const payButton = f.paid ? "" : `<button class="btn btn-primary" style="padding:4px 8px; font-size:11px;" onclick="openCheckoutGateway('${f.student_id}')"><i class="ri-bank-card-line"></i> Pay</button>`;
+
+                tbody.innerHTML += `
+                    <tr>
+                        <td><strong>${f.student_id}</strong></td>
+                        <td>${f.department}</td>
+                        <td>Rs. ${f.total_fee.toLocaleString()}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div style="display:flex; gap:6px;">
+                                ${payButton}
+                                <button class="btn btn-secondary" style="padding:4px 8px; font-size:11px;" onclick="viewReceipt('${f.student_id}')"><i class="ri-article-line"></i> Receipt</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderSummaryCards() {
+            let paidSum = 0;
+            let pendingSum = 0;
+            Object.values(feesDB).forEach(f => {
+                if (f.paid) paidSum += f.total_fee;
+                else pendingSum += f.total_fee;
+            });
+
+            document.getElementById("fee-total-collected").innerText = `Rs. ${(paidSum).toLocaleString()}`;
+            document.getElementById("fee-total-pending").innerText = `Rs. ${(pendingSum).toLocaleString()}`;
+
+            // Defaulters list: unpaid past due date
+            const today = new Date();
+            let defaulterCount = 0;
+            Object.values(feesDB).forEach(f => {
+                if (!f.paid && f.late_fee > 0) {
+                    defaulterCount++;
+                }
+            });
+            document.getElementById("fee-defaulter-count").innerText = `${defaulterCount} Defaulters`;
+        }
+
+        function openCheckoutGateway(studentId) {
+            const f = feesDB[studentId];
+            if (!f) return;
+
+            checkoutTargetSid = studentId;
+            const studentName = studentsDB[studentId] ? studentsDB[studentId].name : studentId;
+            document.getElementById("checkout-student-info").innerText = `${studentId} - ${studentName}`;
+            document.getElementById("checkout-amount").innerText = `Rs. ${f.total_fee.toLocaleString()}`;
+
+            openModal("checkout-modal");
+        }
+
+        function handleProcessCheckout(e) {
+            e.preventDefault();
+            if (!checkoutTargetSid || !feesDB[checkoutTargetSid]) return;
+
+            feesDB[checkoutTargetSid].paid = true;
+            feesDB[checkoutTargetSid].paid_on = new Date().toISOString().replace('T', ' ').split('.')[0];
+
+            saveAllData();
+            closeModal("checkout-modal");
+
+            showToast("Payment Complete", "Simulated card authorization successful! celebration checks generated.", "success");
+            loadFeesTable();
+            renderSummaryCards();
+
+            // Auto prompt checkout receipt receipt
+            viewReceipt(checkoutTargetSid);
+            checkoutTargetSid = null;
+        }
+
+        function viewReceipt(studentId) {
+            const f = feesDB[studentId];
+            if (!f) return;
+
+            document.getElementById("r-student-id").innerText = f.student_id;
+            document.getElementById("r-dept").innerText = f.department;
+            document.getElementById("r-date").innerText = f.calculated_on.split(' ')[0];
+            document.getElementById("r-paid").innerText = f.paid ? `PAID (${f.paid_on.split(' ')[0]})` : "UNPAID PENDING";
+            document.getElementById("r-paid").style.color = f.paid ? "var(--accent-emerald)" : "var(--accent-rose)";
+
+            document.getElementById("r-tuition").innerText = `Rs. ${(f.tuition_fee + f.scholarship_disc).toLocaleString()}`;
+
+            const schRow = document.getElementById("r-scholarship-row");
+            if (f.scholarship_disc > 0) {
+                schRow.style.display = "flex";
+                document.getElementById("r-scholarship").innerText = `-Rs. ${f.scholarship_disc.toLocaleString()}`;
+            } else {
+                schRow.style.display = "none";
+            }
+
+            document.getElementById("r-hostel").innerText = `Rs. ${f.hostel_fee.toLocaleString()}`;
+            document.getElementById("r-transport").innerText = `Rs. ${f.transport_fee.toLocaleString()}`;
+
+            const lateRow = document.getElementById("r-late-row");
+            if (f.late_fee > 0) {
+                lateRow.style.display = "flex";
+                document.getElementById("r-late").innerText = `Rs. ${f.late_fee.toLocaleString()}`;
+            } else {
+                lateRow.style.display = "none";
+            }
+
+            document.getElementById("r-total").innerText = `Rs. ${f.total_fee.toLocaleString()}`;
+            document.getElementById("r-total").style.color = f.paid ? "var(--accent-emerald)" : "var(--accent-rose)";
+
+            openModal("receipt-modal");
+        }
+    </script>
+</body>
+
+</html>
